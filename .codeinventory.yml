@@ -1,0 +1,12 @@
+name: 'GSA/aws-terraform-executor'
+description: 'Executes terraform from the specified repository against the requests provided to the lambda'
+license: cc0-1.0
+openSourceProject: 1
+governmentWideReuseProject: 1
+tags:
+    - open-source
+    - opensource
+    - grace
+    - devsecops
+contact:
+    email: grace-staff@gsa.gov
