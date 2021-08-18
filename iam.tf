@@ -10,7 +10,7 @@ data "aws_iam_policy_document" "role" {
     }
   }
 }
-
+#tfsec:ignore:AWS099
 data "aws_iam_policy_document" "policy" {
   statement {
     effect = "Allow"
