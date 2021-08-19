@@ -35,7 +35,7 @@ variable "region" {
 variable "source_file" {
   type        = string
   description = "(optional) full or relative path to zipped binary of lambda handler"
-  default     = "../release/aws-terraform-executor.zip"
+  default     = "release/aws-terraform-executor.zip"
 }
 
 variable "access_logging_bucket" {

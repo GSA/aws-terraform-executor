@@ -3,7 +3,7 @@ resource "aws_lambda_function" "lambda" {
   function_name                  = local.app_name
   description                    = "Executes terraform against provided accounts"
   role                           = aws_iam_role.role.arn
-  handler                        = "function/lambda_function.lambda_handler"
+  handler                        = "aws-terraform-executor"
   source_code_hash               = filebase64sha256(var.source_file)
   kms_key_arn                    = aws_kms_key.kms.arn
   reserved_concurrent_executions = -1
