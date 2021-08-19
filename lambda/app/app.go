@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/caarlos0/env"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -28,6 +29,7 @@ type Config struct {
 	Bucket   string `env:"BUCKET"`
 	RepoURL  string `env:"REPO_URL"`
 	GitToken string `env:"GIT_TOKEN" envDefault:""`
+	RoleName string `env:"ROLE_NAME" envDefault:"OrganizationAccountAccessRole"`
 }
 
 // Request is a struct that contains the request data.
@@ -43,6 +45,7 @@ type App struct {
 	bucket string
 	repo   string
 	token  string
+	role   string
 	cpus   int
 }
 
@@ -64,6 +67,7 @@ func New() (*App, error) {
 		bucket: cfg.Bucket,
 		token:  cfg.GitToken,
 		repo:   cfg.RepoURL,
+		role:   cfg.RoleName,
 		sess:   sess,
 	}, nil
 }
@@ -124,12 +128,21 @@ func (a *App) execute(req *Request) error {
 		return err
 	}
 
+	roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", req.ID, a.role)
+	cred, err := a.assumeRole(roleArn)
+	if err != nil {
+		return err
+	}
+
 	buf := newWrappedWriter(req.Name)
 
 	cmd := exec.Command("terraform", "apply", "-input=false", "-auto-approve")
 	cmd.Stderr = buf
 	cmd.Stdout = buf
 	cmd.Env = getEnv(req.Variables)
+
+	// Add assumed role credential to the env for this process
+	cmd.Env = append(cmd.Env, getCredEnv(cred)...)
 
 	err = cmd.Run()
 	if err != nil {
@@ -183,6 +196,27 @@ func (a *App) createBackend(path, name string) error {
 	}
 
 	return nil
+}
+
+func (a *App) assumeRole(role string) (*sts.Credentials, error) {
+	svc := sts.New(a.sess)
+
+	resp, err := svc.AssumeRole(&sts.AssumeRoleInput{
+		RoleArn: aws.String(role),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role: %w", err)
+	}
+
+	return resp.Credentials, nil
+}
+
+func getCredEnv(cred *sts.Credentials) []string {
+	return []string{
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", aws.StringValue(cred.AccessKeyId)),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", aws.StringValue(cred.SecretAccessKey)),
+		fmt.Sprintf("AWS_SESSION_TOKEN=%s", aws.StringValue(cred.SessionToken)),
+	}
 }
 
 func getEnv(m map[string]interface{}) (vars []string) {

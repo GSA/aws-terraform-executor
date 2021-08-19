@@ -48,6 +48,7 @@ AWS Terraform Executor receives 'requests' to execute terraform against the prov
 | REGION               | (optional) Region used for EC2 instances (default: us-east-1) |
 | BUCKET               | (required) Name of the bucket for storing terraform state |
 | REPO_URL             | (required) The HTTPS url of the terraform root module repository |
+| ROLE_NAME            | (optional) The role to assume before executing terraform in the provided account |
 | GIT_TOKEN            | (optional) The Auth token to pass for authenticating to the repository |
 
 

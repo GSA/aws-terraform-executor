@@ -17,6 +17,7 @@ resource "aws_lambda_function" "lambda" {
       BUCKET    = aws_s3_bucket.bucket.id
       GIT_TOKEN = var.git_token
       REPO_URL  = var.repo_url
+      ROLE_NAME = var.cross_account_role
     }
   }
 

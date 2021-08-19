@@ -1,4 +1,4 @@
-module github.com/GSA/aws-terraform-executor/lambda
+module github.com/GSA/aws-terraform-executor
 
 go 1.16
 
