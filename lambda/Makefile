@@ -34,15 +34,10 @@ clean: precommit
 test: lint
 	go test -v -cover ./...
 
-lint: go.mod dependencies
+lint: dependencies
 	go mod tidy
 	golangci-lint run --timeout 5m ./...
 	gosec ./...
-
-go.mod:
-ifeq (,$(wildcard go.mod))
-	go mod init
-endif
 
 dependencies: precommit $(GOLANGCILINT) $(GOSEC) $(GHR)
 
