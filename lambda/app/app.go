@@ -72,13 +72,7 @@ func New() (*App, error) {
 	}, nil
 }
 
-func (a *App) Run(ctx context.Context, raw []byte) error {
-	var requests []*Request
-	err := json.Unmarshal(raw, &requests)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal requests: %w", err)
-	}
-
+func (a *App) Run(ctx context.Context, requests []*Request) error {
 	if len(requests) > a.cpus {
 		// Execute no more than the number of CPUs
 		// Send the rest to a new Lambda invocation
