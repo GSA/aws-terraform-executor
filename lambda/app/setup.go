@@ -92,7 +92,7 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		outFile, err := os.OpenFile(filepath.Clean(fpath), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return filenames, err
 		}
@@ -102,7 +102,15 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc)
+		for {
+			_, err = io.CopyN(outFile, rc, 1024)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return filenames, err
+			}
+		}
 
 		// Close the file without defer to close before next iteration of loop
 		err = outFile.Close()
@@ -153,7 +161,7 @@ func downloadFile(u string, path string) error {
 		}
 	}()
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	f, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", path, err)
 	}
