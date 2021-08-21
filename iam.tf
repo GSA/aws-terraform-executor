@@ -15,7 +15,7 @@ data "aws_iam_policy_document" "policy" {
   statement {
     effect = "Allow"
     actions = [
-      "lambda:Invoke"
+      "lambda:InvokeFunction"
     ]
     resources = ["arn:aws:lambda:${var.region}:${local.account_id}:function:${local.app_name}"]
   }
@@ -35,7 +35,6 @@ data "aws_iam_policy_document" "policy" {
       "s3:DeleteObject"
     ]
     resources = [
-      aws_s3_bucket.bucket.arn,
       "${aws_s3_bucket.bucket.arn}/*"
     ]
   }
