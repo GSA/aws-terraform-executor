@@ -230,7 +230,7 @@ func (a *App) checkout(repoURL string, path string, version string) error {
 
 	err := os.RemoveAll(path)
 	if err != nil {
-		log.Printf("failed to remove old repository directory: %s -> %w", path, err)
+		log.Printf("failed to remove old repository directory: %s -> %v", path, err)
 	}
 
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
