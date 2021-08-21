@@ -69,7 +69,7 @@ func unzip(src string, dest string) ([]string, error) {
 
 	for _, f := range r.File {
 		// Store filename/path for returning and using later on
-		fpath := filepath.Join(dest, f.Name) /* #nosec */
+		fpath := filepath.Join(dest, f.Name) // #nosec
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
@@ -92,7 +92,7 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode()) /* #nosec */
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return filenames, err
 		}
@@ -102,14 +102,17 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc) /* #nosec */
+		_, err = io.Copy(outFile, rc)
 
 		// Close the file without defer to close before next iteration of loop
-		outFile.Close()
-		rc.Close()
-
+		err = outFile.Close()
 		if err != nil {
-			return filenames, err
+			return filenames, fmt.Errorf("failed to close outFile: %v", err)
+		}
+
+		err = rc.Close()
+		if err != nil {
+			return filenames, fmt.Errorf("failed to close zip file: %v", err)
 		}
 	}
 	return filenames, nil
@@ -139,7 +142,7 @@ func latest() (string, error) {
 }
 
 func downloadFile(u string, path string) error {
-	resp, err := http.Get(u) /* #nosec */
+	resp, err := http.Get(u) // #nosec
 	if err != nil {
 		return fmt.Errorf("failed to download: %v", err)
 	}
@@ -150,7 +153,7 @@ func downloadFile(u string, path string) error {
 		}
 	}()
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644) /* #nosec */
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", path, err)
 	}

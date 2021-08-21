@@ -142,7 +142,7 @@ func (a *App) prepTf() error {
 		return err
 	}
 
-	err = os.Chmod(a.tf, 0755) /* #nosec */
+	err = os.Chmod(a.tf, 0750) // #nosec
 	if err != nil {
 		return fmt.Errorf("failed to make terraform executable: %w", err)
 	}
@@ -176,13 +176,13 @@ func (a *App) execute(req *Request) error {
 	}
 
 	pluginDir := filepath.Join("/tmp", "terraform.d", "plugins")
-	err = os.MkdirAll(pluginDir, 0755) /* #nosec */
+	err = os.MkdirAll(pluginDir, 0750)
 	if err != nil {
 		return fmt.Errorf("failed to create plugins directory: %w", err)
 	}
 
 	modDir := filepath.Join(path, ".terraform", "modules")
-	err = os.MkdirAll(modDir, 0755)
+	err = os.MkdirAll(modDir, 0750)
 	if err != nil {
 		return fmt.Errorf("failed to create .terraform/modules directory: %w", err)
 	}
@@ -325,7 +325,7 @@ type Module struct {
 func readModules(path string) ([]Module, error) {
 	r := regexp.MustCompile(`module "(.*)" {\s+source\s+=\s+"(.*)"`)
 
-	content, err := ioutil.ReadFile(path) /* #nosec */
+	content, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s -> %w", path, err)
 	}
@@ -367,7 +367,7 @@ func readModules(path string) ([]Module, error) {
 func (a *App) createGitConfig(path string) error {
 	content := fmt.Sprintf("[url \"https://%s@github.com\"]\n\tinsteadOf = https://github.com\n", a.token)
 
-	err := os.WriteFile(path, []byte(content), 0644) /* #nosec */
+	err := os.WriteFile(path, []byte(content), 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write %s -> %w", path, err)
 	}
@@ -375,7 +375,6 @@ func (a *App) createGitConfig(path string) error {
 	return nil
 }
 
-/* #nosec */
 func (a *App) createBackend(creds credentials.Value, path, name string) error {
 	p := filepath.Join(path, "backend.tf")
 	err := os.WriteFile(p, []byte(fmt.Sprintf(`terraform {
@@ -388,7 +387,7 @@ func (a *App) createBackend(creds credentials.Value, path, name string) error {
 				token      = "%s"
 			}
 	}`, a.bucket, name, aws.StringValue(a.sess.Config.Region),
-		creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)), 0644)
+		creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)), 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write %s: %w", p, err)
 	}
@@ -444,7 +443,7 @@ func getEnv(m map[string]interface{}) (vars []string) {
 }
 
 func (a *App) runTf(cwd string, req *Request, env []string, args ...string) (*exec.Cmd, error) {
-	cmd := exec.Command(a.tf, args...) /* #nosec */
+	cmd := exec.Command(a.tf, args...) // #nosec
 	cmd.Env = env
 	cmd.Dir = cwd
 	// grab the output pipes so we can prepend the job
