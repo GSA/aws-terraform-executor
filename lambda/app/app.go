@@ -364,7 +364,7 @@ func readModules(path string) ([]Module, error) {
 func (a *App) createGitConfig(path string) error {
 	content := fmt.Sprintf("[url \"https://%s@github.com\"]\n\tinsteadOf = https://github.com\n", a.token)
 
-	err := os.WriteFile(path, []byte(content), 0644) //nolint:gosec
+	err := os.WriteFile(path, []byte(content), 0644) /* #nosec */
 	if err != nil {
 		return fmt.Errorf("failed to write %s -> %w", path, err)
 	}
@@ -372,7 +372,7 @@ func (a *App) createGitConfig(path string) error {
 	return nil
 }
 
-//nolint:gosec
+/* #nosec */
 func (a *App) createBackend(creds credentials.Value, path, name string) error {
 	p := filepath.Join(path, "backend.tf")
 	err := os.WriteFile(p, []byte(fmt.Sprintf(`terraform {
@@ -441,7 +441,7 @@ func getEnv(m map[string]interface{}) (vars []string) {
 }
 
 func (a *App) runTf(cwd string, req *Request, env []string, args ...string) (*exec.Cmd, error) {
-	cmd := exec.Command(a.tf, args...) //nolint:gosec
+	cmd := exec.Command(a.tf, args...) /* #nosec */
 	cmd.Env = env
 	cmd.Dir = cwd
 	// grab the output pipes so we can prepend the job

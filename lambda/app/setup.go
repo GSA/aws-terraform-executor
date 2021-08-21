@@ -67,7 +67,7 @@ func unzip(src string, dest string) ([]string, error) {
 
 	for _, f := range r.File {
 		// Store filename/path for returning and using later on
-		fpath := filepath.Join(dest, f.Name) //nolint:gosec
+		fpath := filepath.Join(dest, f.Name) /* #nosec */
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
@@ -100,7 +100,7 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc) //nolint:gosec
+		_, err = io.Copy(outFile, rc) /* #nosec */
 
 		// Close the file without defer to close before next iteration of loop
 		outFile.Close()
@@ -137,7 +137,7 @@ func latest() (string, error) {
 }
 
 func downloadFile(u string, path string) error {
-	resp, err := http.Get(u) //nolint:gosec
+	resp, err := http.Get(u) /* #nosec */
 	if err != nil {
 		return fmt.Errorf("failed to download: %v", err)
 	}
