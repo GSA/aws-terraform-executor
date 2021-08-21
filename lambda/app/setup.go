@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -56,6 +57,7 @@ func getTerraform(version string) (string, error) {
 
 // using zip implementation from https://golangcode.com/unzip-files-in-go/
 // to prevent package dependency
+// nolint
 func unzip(src string, dest string) ([]string, error) {
 	var filenames []string
 
@@ -90,7 +92,7 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode()) /* #nosec */
 		if err != nil {
 			return filenames, err
 		}
@@ -144,18 +146,18 @@ func downloadFile(u string, path string) error {
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			fmt.Printf("failed to close HTTP response body: %v", err)
+			log.Printf("failed to close HTTP response body: %v", err)
 		}
 	}()
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644) /* #nosec */
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %w", path, err)
 	}
 	defer func() {
 		err := f.Close()
 		if err != nil {
-			fmt.Printf("failed to close %s file handle: %v", path, err)
+			log.Printf("failed to close %s file handle: %v", path, err)
 		}
 	}()
 

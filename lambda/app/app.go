@@ -104,7 +104,7 @@ func (a *App) Run(ctx context.Context, requests []*Request) error {
 		go func(req *Request, wg *sync.WaitGroup) {
 			err := a.execute(req)
 			if err != nil {
-				fmt.Printf("failed to execute: %s -> %v\n", req.Name, err)
+				log.Printf("failed to execute: %s -> %v\n", req.Name, err)
 			}
 			wg.Done()
 		}(req, &wg)
@@ -142,7 +142,7 @@ func (a *App) prepTf() error {
 		return err
 	}
 
-	err = os.Chmod(a.tf, 0755)
+	err = os.Chmod(a.tf, 0755) /* #nosec */
 	if err != nil {
 		return fmt.Errorf("failed to make terraform executable: %w", err)
 	}
@@ -176,7 +176,7 @@ func (a *App) execute(req *Request) error {
 	}
 
 	pluginDir := filepath.Join("/tmp", "terraform.d", "plugins")
-	err = os.MkdirAll(pluginDir, 0755)
+	err = os.MkdirAll(pluginDir, 0755) /* #nosec */
 	if err != nil {
 		return fmt.Errorf("failed to create plugins directory: %w", err)
 	}
@@ -228,7 +228,10 @@ func (a *App) checkout(repoURL string, path string, version string) error {
 		auth = ghttp.BasicAuth{Username: "git", Password: a.token}
 	}
 
-	os.RemoveAll(path)
+	err := os.RemoveAll(path)
+	if err != nil {
+		log.Printf("failed to remove old repository directory: %s -> %w", path, err)
+	}
 
 	repo, err := git.PlainClone(path, false, &git.CloneOptions{
 		URL:  repoURL,
@@ -322,7 +325,7 @@ type Module struct {
 func readModules(path string) ([]Module, error) {
 	r := regexp.MustCompile(`module "(.*)" {\s+source\s+=\s+"(.*)"`)
 
-	content, err := ioutil.ReadFile(path)
+	content, err := ioutil.ReadFile(path) /* #nosec */
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s -> %w", path, err)
 	}
@@ -507,7 +510,7 @@ func (a *App) wrapOutput(name string, out io.Writer, s *bufio.Scanner, wg *sync.
 	for s.Scan() {
 		_, err := fmt.Fprintf(out, "[%s]: %s\n", name, s.Text())
 		if err != nil {
-			fmt.Printf("failed to Fprintf: %v\n", err)
+			log.Printf("failed to Fprintf: %v\n", err)
 		}
 	}
 
