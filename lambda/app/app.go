@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -118,7 +119,7 @@ func (a *App) Run(ctx context.Context, requests []*Request) error {
 func (a *App) dispatch(requests []*Request) error {
 	b, err := json.Marshal(requests)
 	if err != nil {
-		return fmt.Errorf("error marshalling requests: %w", err)
+		return fmt.Errorf("error marshaling requests: %w", err)
 	}
 
 	l := lambda.New(a.sess)
@@ -266,7 +267,10 @@ func (a *App) getModules(path string) error {
 		if err != nil {
 			return err
 		}
-		a.checkout(u, filepath.Join(modpath, m.Key), ref)
+		err = a.checkout(u, filepath.Join(modpath, m.Key), ref)
+		if err != nil {
+			return err
+		}
 	}
 	d := struct {
 		Modules []Module
@@ -360,7 +364,7 @@ func readModules(path string) ([]Module, error) {
 func (a *App) createGitConfig(path string) error {
 	content := fmt.Sprintf("[url \"https://%s@github.com\"]\n\tinsteadOf = https://github.com\n", a.token)
 
-	err := os.WriteFile(path, []byte(content), 0644)
+	err := os.WriteFile(path, []byte(content), 0644) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to write %s -> %w", path, err)
 	}
@@ -380,7 +384,7 @@ func (a *App) createBackend(creds credentials.Value, path, name string) error {
 				token      = "%s"
 			}
 	}`, a.bucket, name, aws.StringValue(a.sess.Config.Region),
-		creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)), 0644)
+		creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)), 0644) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to write %s: %w", p, err)
 	}
@@ -436,7 +440,7 @@ func getEnv(m map[string]interface{}) (vars []string) {
 }
 
 func (a *App) runTf(cwd string, req *Request, env []string, args ...string) (*exec.Cmd, error) {
-	cmd := exec.Command(a.tf, args...)
+	cmd := exec.Command(a.tf, args...) //nolint:gosec
 	cmd.Env = env
 	cmd.Dir = cwd
 	// grab the output pipes so we can prepend the job
@@ -457,8 +461,14 @@ func (a *App) runTf(cwd string, req *Request, env []string, args ...string) (*ex
 	}
 
 	go func() {
-		a.readOutput(req.Name, stdoutP, stderrP)
-		cmd.Wait()
+		err := a.readOutput(req.Name, stdoutP, stderrP)
+		if err != nil {
+			log.Printf("[ERROR] %v", err)
+		}
+		err = cmd.Wait()
+		if err != nil {
+			log.Printf("[ERROR] %v", err)
+		}
 	}()
 
 	return cmd, nil

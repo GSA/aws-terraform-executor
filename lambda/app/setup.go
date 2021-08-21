@@ -66,9 +66,8 @@ func unzip(src string, dest string) ([]string, error) {
 	defer r.Close()
 
 	for _, f := range r.File {
-
 		// Store filename/path for returning and using later on
-		fpath := filepath.Join(dest, f.Name)
+		fpath := filepath.Join(dest, f.Name) //nolint:gosec
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
@@ -79,7 +78,10 @@ func unzip(src string, dest string) ([]string, error) {
 
 		if f.FileInfo().IsDir() {
 			// Make Folder
-			os.MkdirAll(fpath, os.ModePerm)
+			err := os.MkdirAll(fpath, os.ModePerm)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create subdirectory: %w", err)
+			}
 			continue
 		}
 
@@ -98,7 +100,7 @@ func unzip(src string, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc)
+		_, err = io.Copy(outFile, rc) //nolint:gosec
 
 		// Close the file without defer to close before next iteration of loop
 		outFile.Close()
@@ -124,6 +126,7 @@ func latest() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to HEAD terraform repo: %w", err)
 	}
+	defer resp.Body.Close()
 
 	location, err := resp.Location()
 	if err != nil {
@@ -134,7 +137,7 @@ func latest() (string, error) {
 }
 
 func downloadFile(u string, path string) error {
-	resp, err := http.Get(u)
+	resp, err := http.Get(u) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to download: %v", err)
 	}
