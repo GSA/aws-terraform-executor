@@ -372,6 +372,7 @@ func (a *App) createGitConfig(path string) error {
 	return nil
 }
 
+//nolint:gosec
 func (a *App) createBackend(creds credentials.Value, path, name string) error {
 	p := filepath.Join(path, "backend.tf")
 	err := os.WriteFile(p, []byte(fmt.Sprintf(`terraform {
@@ -384,7 +385,7 @@ func (a *App) createBackend(creds credentials.Value, path, name string) error {
 				token      = "%s"
 			}
 	}`, a.bucket, name, aws.StringValue(a.sess.Config.Region),
-		creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)), 0644) //nolint:gosec
+		creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write %s: %w", p, err)
 	}
