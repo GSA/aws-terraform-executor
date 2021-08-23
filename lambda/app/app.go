@@ -81,11 +81,15 @@ func New() (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context, requests []*Request) error {
+	log.Printf("request count: %d, cpu count: %d\n", len(requests), a.cpus)
+	log.Printf("received requests: %v\n", requests)
+
 	end := len(requests)
 	if end > a.cpus {
 		// Execute no more than the number of CPUs
 		// Send the rest to a new Lambda invocation
 		end = a.cpus
+		log.Printf("dispatching requests: %v\n", requests[a.cpus:])
 		err := a.dispatch(requests[a.cpus:])
 		if err != nil {
 			return err
@@ -97,11 +101,14 @@ func (a *App) Run(ctx context.Context, requests []*Request) error {
 		return err
 	}
 
+	log.Printf("executing requests: %v\n", requests[:end])
+
 	var wg sync.WaitGroup
 	wg.Add(end)
 	for _, req := range requests[:end] {
 		req := req
 		go func(req *Request, wg *sync.WaitGroup) {
+			log.Printf("executing request: %s\n", req.Name)
 			err := a.execute(req)
 			if err != nil {
 				log.Printf("failed to execute: %s -> %v\n", req.Name, err)
@@ -465,10 +472,6 @@ func (a *App) runTf(cwd string, req *Request, env []string, args ...string) (*ex
 
 	go func() {
 		err := a.readOutput(req.Name, stdoutP, stderrP)
-		if err != nil {
-			log.Printf("[ERROR] %v", err)
-		}
-		err = cmd.Wait()
 		if err != nil {
 			log.Printf("[ERROR] %v", err)
 		}
