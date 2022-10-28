@@ -42,13 +42,13 @@ lint: dependencies
 dependencies: precommit $(GOLANGCILINT) $(GOSEC) $(GHR)
 
 $(GOLANGCILINT):
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 
 $(GOSEC):
-	go get github.com/securego/gosec/v2/cmd/gosec@v2.14.0
+	go install github.com/securego/gosec/v2/cmd/gosec@v2.14.0
 
 $(GHR):
-	go get github.com/tcnksm/ghr@v0.16.0
+	go install github.com/tcnksm/ghr@v0.16.0
 
 precommit:
 ifneq ($(strip $(hooksPath)),.github/hooks)
