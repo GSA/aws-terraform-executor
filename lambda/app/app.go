@@ -311,6 +311,7 @@ func (a *App) getModules(path string) error {
 		Modules []Module
 	}{modules}
 
+	//#nosec G304
 	f, err := os.Create(filepath.Join(modpath, "modules.json"))
 	if err != nil {
 		return fmt.Errorf("failed to create modules.json: %w", err)
