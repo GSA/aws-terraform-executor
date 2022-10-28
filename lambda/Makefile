@@ -42,10 +42,10 @@ lint: dependencies
 dependencies: precommit $(GOLANGCILINT) $(GOSEC) $(GHR)
 
 $(GOLANGCILINT):
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 $(GOSEC):
-	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
+	go get github.com/securego/gosec/v2/cmd/gosec@latest
 
 $(GHR):
 	go get -u github.com/tcnksm/ghr
