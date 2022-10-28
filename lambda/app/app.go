@@ -103,20 +103,31 @@ func (a *App) Run(ctx context.Context, requests []*Request) error {
 
 	log.Printf("executing requests: %v\n", requests[:end])
 
-	var wg sync.WaitGroup
-	wg.Add(end)
+	executors := make([]func() error, 0, end)
 	for _, req := range requests[:end] {
 		req := req
-		go func(req *Request, wg *sync.WaitGroup) {
-			log.Printf("executing request: %s\n", req.Name)
-			err := a.execute(req)
-			if err != nil {
-				log.Printf("failed to execute: %s -> %v\n", req.Name, err)
-			}
-			wg.Done()
-		}(req, &wg)
+		fn, err := a.prepExec(req)
+		if err != nil {
+			log.Printf("failed to prepare request: %s\n", req.Name)
+			continue
+		}
+		executors = append(executors, fn)
 	}
 
+	log.Printf("prepared all %d requests for execution...\n", end)
+
+	var wg sync.WaitGroup
+	wg.Add(end)
+	for _, exec := range executors {
+		exec := exec
+		go func(wg *sync.WaitGroup) {
+			err := exec()
+			if err != nil {
+				log.Printf("executor failed: %v\n", err)
+			}
+			wg.Done()
+		}(&wg)
+	}
 	wg.Wait()
 
 	return nil
@@ -157,46 +168,46 @@ func (a *App) prepTf() error {
 	return nil
 }
 
-// execute runs terraform using the given request
-func (a *App) execute(req *Request) error {
+// prepExec prepares to execute terraform and returns a func() error to be called to start execution
+func (a *App) prepExec(req *Request) (func() error, error) {
 	path := filepath.Join("/tmp", req.Name)
 
 	err := a.checkout(a.repo, path, req.Version)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	creds, err := a.sess.Config.Credentials.Get()
 	if err != nil {
-		return fmt.Errorf("failed to get AWS credentials: %w", err)
+		return nil, fmt.Errorf("failed to get AWS credentials: %w", err)
 	}
 
 	err = a.createBackend(creds, path, req.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", req.ID, a.role)
 	cred, err := a.assumeRole(req.Name, roleArn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pluginDir := filepath.Join("/tmp", "terraform.d", "plugins")
 	err = os.MkdirAll(pluginDir, 0750)
 	if err != nil {
-		return fmt.Errorf("failed to create plugins directory: %w", err)
+		return nil, fmt.Errorf("failed to create plugins directory: %w", err)
 	}
 
 	modDir := filepath.Join(path, ".terraform", "modules")
 	err = os.MkdirAll(modDir, 0750)
 	if err != nil {
-		return fmt.Errorf("failed to create .terraform/modules directory: %w", err)
+		return nil, fmt.Errorf("failed to create .terraform/modules directory: %w", err)
 	}
 
 	err = a.getModules(filepath.Join(path, "main.tf"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	env := getEnv(req.Variables)
@@ -209,24 +220,33 @@ func (a *App) execute(req *Request) error {
 
 	err = a.createGitConfig(filepath.Join(path, ".git", "config"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	init, err := a.runTf(path, req, env, "init", "-input=false", "-no-color")
-	if err != nil {
-		return err
-	}
-	err = init.Wait()
-	if err != nil {
-		return err
-	}
+	return func() error {
+		log.Printf("executing request: %s\n", req.Name)
+		init, err := a.runTf(path, req, env, "init", "-input=false", "-no-color")
+		if err != nil {
+			return fmt.Errorf("failed to execute runTf(init) for %s -> %v\n", req.Name, err)
+		}
+		err = init.Wait()
+		if err != nil {
+			return fmt.Errorf("failed to execute wait(runTf(init)) for %s -> %v\n", req.Name, err)
+		}
+		init.ProcessState.ExitCode()
 
-	apply, err := a.runTf(path, req, env, "apply", "-input=false", "-auto-approve", "-no-color")
-	if err != nil {
-		return err
-	}
+		apply, err := a.runTf(path, req, env, "apply", "-input=false", "-auto-approve", "-no-color")
+		if err != nil {
+			return fmt.Errorf("failed to execute runTf(apply) for %s -> %v\n", req.Name, err)
+		}
 
-	return apply.Wait()
+		err = apply.Wait()
+		if err != nil {
+			return fmt.Errorf("failed to execute wait(runTf(apply)) for %s -> %v\n", req.Name, err)
+		}
+
+		return nil
+	}, nil
 }
 
 func (a *App) checkout(repoURL string, path string, version string) error {
@@ -273,11 +293,17 @@ func (a *App) getModules(path string) error {
 	modpath := filepath.Join(filepath.Dir(path), ".terraform", "modules")
 
 	for _, m := range modules {
+		modulePath := filepath.Join(modpath, m.Key)
+		if _, err := os.Stat(modulePath); err == nil {
+			log.Printf("module already exists at: %s, skipping...\n", modulePath)
+			continue
+		}
+
 		u, ref, err := normalizedSource(m.Source)
 		if err != nil {
 			return err
 		}
-		err = a.checkout(u, filepath.Join(modpath, m.Key), ref)
+		err = a.checkout(u, modulePath, ref)
 		if err != nil {
 			return err
 		}
@@ -473,7 +499,7 @@ func (a *App) runTf(cwd string, req *Request, env []string, args ...string) (*ex
 	go func() {
 		err := a.readOutput(req.Name, stdoutP, stderrP)
 		if err != nil {
-			log.Printf("[ERROR] %v", err)
+			log.Printf("[%s][ERROR] %v", req.Name, err)
 		}
 	}()
 
