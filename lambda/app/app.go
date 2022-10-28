@@ -289,7 +289,7 @@ func (a *App) getModules(path string) error {
 		return err
 	}
 
-	modpath := filepath.Join(filepath.Dir(path), ".terraform", "modules")
+	modpath := filepath.Join(filepath.Dir(filepath.Clean(path)), ".terraform", "modules")
 
 	for _, m := range modules {
 		modulePath := filepath.Join(modpath, m.Key)
