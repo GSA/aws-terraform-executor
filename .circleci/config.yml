@@ -32,7 +32,7 @@ jobs:
     environment:
       AWS_REGION: us-east-1
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:latest
     steps:
       - checkout
       - run:
@@ -40,7 +40,7 @@ jobs:
           command: make lint_lambda
   test_lambda:
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:latest
     steps:
       - checkout
       - run:
@@ -48,7 +48,7 @@ jobs:
           command: make test_lambda
   release_lambda:
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:latest
     steps:
       - checkout
       - run:
@@ -58,7 +58,7 @@ jobs:
           path: release/
   tfsec:
     docker:
-      - image: circleci/golang:latest
+      - image: cimg/go:latest
     steps:
       - checkout
       - run:
