@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -227,22 +226,22 @@ func (a *App) prepExec(req *Request) (func() error, error) {
 		log.Printf("executing request: %s\n", req.Name)
 		init, err := a.runTf(path, req, env, "init", "-input=false", "-no-color")
 		if err != nil {
-			return fmt.Errorf("failed to execute runTf(init) for %s -> %v\n", req.Name, err)
+			return fmt.Errorf("failed to execute runTf(init) for %s -> %v", req.Name, err)
 		}
 		err = init.Wait()
 		if err != nil {
-			return fmt.Errorf("failed to execute wait(runTf(init)) for %s -> %v\n", req.Name, err)
+			return fmt.Errorf("failed to execute wait(runTf(init)) for %s -> %v", req.Name, err)
 		}
 		init.ProcessState.ExitCode()
 
 		apply, err := a.runTf(path, req, env, "apply", "-input=false", "-auto-approve", "-no-color")
 		if err != nil {
-			return fmt.Errorf("failed to execute runTf(apply) for %s -> %v\n", req.Name, err)
+			return fmt.Errorf("failed to execute runTf(apply) for %s -> %v", req.Name, err)
 		}
 
 		err = apply.Wait()
 		if err != nil {
-			return fmt.Errorf("failed to execute wait(runTf(apply)) for %s -> %v\n", req.Name, err)
+			return fmt.Errorf("failed to execute wait(runTf(apply)) for %s -> %v", req.Name, err)
 		}
 
 		return nil
@@ -358,7 +357,7 @@ type Module struct {
 func readModules(path string) ([]Module, error) {
 	r := regexp.MustCompile(`module "(.*)" {\s+source\s+=\s+"(.*)"`)
 
-	content, err := ioutil.ReadFile(filepath.Clean(path))
+	content, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s -> %w", path, err)
 	}
