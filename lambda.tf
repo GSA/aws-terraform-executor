@@ -22,5 +22,9 @@ resource "aws_lambda_function" "lambda" {
     }
   }
 
+  ephemeral_storage {
+    size = 1024 # Min 512 MB / Max 10240 MB
+  }
+
   depends_on = [aws_iam_role_policy_attachment.policy]
 }
